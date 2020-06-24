@@ -1,19 +1,19 @@
 package main
 
 import (
-	"os"
 	"fmt"
-	"strings"
-	"time"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"strings"
+	"time"
 )
 
 var ServerName = "C1"
 var ResponseCount = 0
 
 func get(url string) string {
-	client := &http.Client {
+	client := &http.Client{
 		Timeout: 5 * time.Second,
 	}
 	resp, err := client.Get(url)
@@ -31,7 +31,7 @@ func get(url string) string {
 func handler(w http.ResponseWriter, r *http.Request) {
 	hostname, _ := os.Hostname()
 	ResponseCount += 1
-	
+
 	fmt.Fprintf(w, "I am parent server on host %s (%d times).\n", hostname, ResponseCount)
 	fmt.Fprintf(w, "  C1 ... %s\n", strings.TrimRight(get(os.Getenv("C1")), "\n"))
 	fmt.Fprintf(w, "  C2 ... %s\n", strings.TrimRight(get(os.Getenv("C2")), "\n"))

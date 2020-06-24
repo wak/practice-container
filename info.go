@@ -1,12 +1,12 @@
 package main
 
 import (
-	"os"
-	"io"
 	"fmt"
-	"time"
-	"strings"
+	"io"
 	"net/http"
+	"os"
+	"strings"
+	"time"
 )
 
 type Fprintfable interface {
@@ -26,17 +26,17 @@ func write(w io.Writer) {
 	fmt.Fprintf(w, "Time: %s\n", time.Now())
 	fmt.Fprintf(w, "Hostname: %s\n", hostname)
 	fmt.Fprintf(w, "PID: %d\n", pid)
-	
+
 	fmt.Fprintf(w, "ARGV\n")
 	for i, v := range os.Args {
-        fmt.Fprintf(w, "  [%d] %s\n", i, v)
+		fmt.Fprintf(w, "  [%d] %s\n", i, v)
 	}
-	
+
 	fmt.Fprintf(w, "ENV\n")
 	for _, e := range os.Environ() {
-        pair := strings.SplitN(e, "=", 2)
-        fmt.Fprintf(w, "  %s = %s\n", pair[0], pair[1])
-    }
+		pair := strings.SplitN(e, "=", 2)
+		fmt.Fprintf(w, "  %s = %s\n", pair[0], pair[1])
+	}
 	fmt.Fprintln(w, "</pre></body></html>")
 }
 
@@ -45,7 +45,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	if (len(os.Args) > 1 && os.Args[1] == "test") {
+	if len(os.Args) > 1 && os.Args[1] == "test" {
 		write(os.Stdout)
 	} else {
 		fmt.Println("Test server started.")

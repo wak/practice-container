@@ -1,9 +1,9 @@
 package main
 
 import (
-	"os"
 	"fmt"
 	"net/http"
+	"os"
 )
 
 var ServerName = "C1"
