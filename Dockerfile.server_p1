@@ -1,0 +1,10 @@
+FROM alpine:latest
+
+COPY server_p1 /
+
+ENV C1 http://localhost:8081/
+ENV C2 http://localhost:8081/
+
+EXPOSE 8080
+
+ENTRYPOINT [ "/server_p1" ]

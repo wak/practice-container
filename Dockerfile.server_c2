@@ -1,0 +1,7 @@
+FROM alpine:latest
+
+COPY server_c2 /
+
+EXPOSE 8080
+
+ENTRYPOINT [ "/server_c2" ]

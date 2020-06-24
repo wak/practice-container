@@ -1,0 +1,7 @@
+FROM alpine:latest
+
+COPY info /
+
+EXPOSE 8080
+
+ENTRYPOINT [ "/info" ]
