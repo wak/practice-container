@@ -1,0 +1,25 @@
+version: '3'
+
+services:
+  parent:
+    image: server_p1
+    build:
+      context: .
+      dockerfile: Dockerfile.server_p1
+    environment:
+      C1: http://child1:8080/
+      C2: http://child2:8080/
+    ports:
+      - "8080:8080"
+
+  child1:
+    image: server_c1
+    build:
+      context: .
+      dockerfile: Dockerfile.server_c1
+
+  child2:
+    image: server_c2
+    build:
+      context: .
+      dockerfile: Dockerfile.server_c2
