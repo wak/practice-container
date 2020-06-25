@@ -95,6 +95,35 @@ func handler_crash_c_all(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, get(child_crash_url(ChildUrl2)))
 }
 
+func write_info(w io.Writer) {
+	pid := os.Getpid()
+	hostname, _ := os.Hostname()
+
+	ResponseCount += 1
+
+	fmt.Fprintln(w, "<html><head><title>Test server</title></head><body><pre>")
+	fmt.Fprintf(w, "Response: %d\n", ResponseCount)
+	fmt.Fprintf(w, "Time: %s\n", time.Now())
+	fmt.Fprintf(w, "Hostname: %s\n", hostname)
+	fmt.Fprintf(w, "PID: %d\n", pid)
+
+	fmt.Fprintf(w, "ARGV\n")
+	for i, v := range os.Args {
+		fmt.Fprintf(w, "  [%d] %s\n", i, v)
+	}
+
+	fmt.Fprintf(w, "ENV\n")
+	for _, e := range os.Environ() {
+		pair := strings.SplitN(e, "=", 2)
+		fmt.Fprintf(w, "  %s = %s\n", pair[0], pair[1])
+	}
+	fmt.Fprintln(w, "</pre></body></html>")
+}
+
+func handler_info(w http.ResponseWriter, r *http.Request) {
+	write_info(w)
+}
+
 func run_parent(server_name string, revision string) {
 	ServerName = server_name
 	AppRevision = revision
@@ -119,6 +148,7 @@ func run_parent(server_name string, revision string) {
 	fmt.Println("Test parent server", ServerName, "started.")
 
 	http.HandleFunc("/", handler_parent_default)
+	http.HandleFunc("/info", handler_info)
 	http.HandleFunc("/crash", handler_crash)
 	
 	http.HandleFunc("/child/crash/1", handler_crash_c1)
@@ -126,7 +156,6 @@ func run_parent(server_name string, revision string) {
 	http.HandleFunc("/child/crash/all", handler_crash_c_all)
 	http.ListenAndServe(addr, nil)
 }
-
 
 func handler_child_default(w http.ResponseWriter, r *http.Request) {
 	ResponseCount += 1
@@ -152,6 +181,7 @@ func run_child(server_name string, revision string) {
 
 	fmt.Printf("Test server %s started (listen %s).\n", ServerName, addr)
 	http.HandleFunc("/", handler_child_default)
+	http.HandleFunc("/info", handler_info)
 	http.HandleFunc("/crash", handler_crash)
 	http.ListenAndServe(addr, nil)
 }
