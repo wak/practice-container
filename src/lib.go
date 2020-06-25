@@ -124,6 +124,15 @@ func handler_info(w http.ResponseWriter, r *http.Request) {
 	write_info(w)
 }
 
+func get_listen_addr() string {
+	if len(os.Args) > 1 {
+		return ":" + os.Args[1]
+	} else {
+		return ":8080"
+	}
+
+}
+
 func run_parent(server_name string, revision string) {
 	ServerName = server_name
 	AppRevision = revision
@@ -140,12 +149,8 @@ func run_parent(server_name string, revision string) {
 		return
 	}
 
-	addr := ":8080"
-	if len(os.Args) > 1 {
-		addr = ":" + os.Args[1]
-	}
-
-	fmt.Println("Test parent server", ServerName, "started.")
+	addr := get_listen_addr()
+	fmt.Printf("Test parent server %s started (listen %s).\n", ServerName, addr)
 
 	http.HandleFunc("/", handler_parent_default)
 	http.HandleFunc("/info", handler_info)
@@ -174,11 +179,7 @@ func run_child(server_name string, revision string) {
 	ServerName = server_name
 	AppRevision = revision
 
-	addr := ":8080"
-	if len(os.Args) > 1 {
-		addr = ":" + os.Args[1]
-	}
-
+	addr := get_listen_addr()
 	fmt.Printf("Test server %s started (listen %s).\n", ServerName, addr)
 	http.HandleFunc("/", handler_child_default)
 	http.HandleFunc("/info", handler_info)

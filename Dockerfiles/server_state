@@ -1,0 +1,7 @@
+FROM alpine:latest
+
+COPY server_state /
+
+EXPOSE 8080
+
+ENTRYPOINT [ "/server_state" ]
