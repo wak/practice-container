@@ -9,10 +9,6 @@ import (
 	"time"
 )
 
-type Fprintfable interface {
-	Fprintf(w interface{}, format string, a ...interface{}) (n int, err error)
-}
-
 var ResponseCount = 0
 
 func write(w io.Writer) {
