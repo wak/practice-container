@@ -1,17 +1,21 @@
 .PHONY: docker run
 
-PARTS := info server_p1 server_c1 server_c2
+SERVERS := server_p1 server_c1 server_c2
+GOOS=linux
+GOARCH=amd64
 
-
-go: $(PARTS)
+go: info $(SERVERS)
 
 container: go $(foreach t,$(PARTS),container-$(t))
 
 container-%: Dockerfile.%
 	docker image build -t $(patsubst Dockerfile.%,%,$<) -f $< .
 
+$(SERVERS): %: %.go server_lib.go
+	go build $^
+
 %: %.go
-	GOOS=linux GOARCH=amd64 go build $<
+	go build $<
 
 # run: docker
 # 	docker run --rm -it --name sample01 -p 8080:8080 sample
