@@ -1,4 +1,4 @@
-.PHONY: docker run
+.PHONY: docker run container
 
 SERVERS := info server_p1 server_c1 server_c2
 GOOS=linux
@@ -6,10 +6,13 @@ GOARCH=amd64
 
 go: $(SERVERS)
 
-container: go $(foreach t,$(PARTS),container-$(t))
+clean:
+	rm -f $(SERVERS)
 
-container-%: Dockerfile.%
-	docker image build -t $(patsubst Dockerfile.%,%,$<) -f $< .
+container: go $(foreach t,$(PARTS),container/$(t))
+
+container/%: Dockerfiles/%
+	docker image build -t $(patsubst Dockerfiles/%,%,$<) -f $< .
 
 $(SERVERS): %: %.go server_lib.go
 	go build $^
