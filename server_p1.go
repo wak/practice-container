@@ -105,6 +105,11 @@ func main() {
 		return
 	}
 	
+	addr := ":8080"
+	if len(os.Args) > 1 {
+		addr = ":" + os.Args[1]
+	}
+	
 	fmt.Println("Test parent server", ServerName, "started.")
 
 	http.HandleFunc("/", handler_default)
@@ -113,5 +118,5 @@ func main() {
 	http.HandleFunc("/child/crash/1", handler_crash_c1)
 	http.HandleFunc("/child/crash/2", handler_crash_c2)
 	http.HandleFunc("/child/crash/all", handler_crash_c_all)
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(addr, nil)
 }
