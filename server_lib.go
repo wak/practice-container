@@ -145,13 +145,12 @@ func run_child(server_name string, revision string) {
 	ServerName = server_name
 	AppRevision = revision
 
-	fmt.Println("Test server", ServerName, "started.")
 	addr := ":8080"
-
 	if len(os.Args) > 1 {
 		addr = ":" + os.Args[1]
 	}
 
+	fmt.Printf("Test server %s started (listen %s).\n", ServerName, addr)
 	http.HandleFunc("/", handler_child_default)
 	http.HandleFunc("/crash", handler_crash)
 	http.ListenAndServe(addr, nil)

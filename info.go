@@ -44,9 +44,13 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "test" {
 		write(os.Stdout)
 	} else {
-		fmt.Println("Test server started.")
+		addr := ":8080"
+		if len(os.Args) > 1 {
+			addr = ":" + os.Args[1]
+		}
 
+		fmt.Printf("Test server started (listen %s).\n", addr)
 		http.HandleFunc("/", handler)
-		http.ListenAndServe(":8080", nil)
+		http.ListenAndServe(addr, nil)
 	}
 }
