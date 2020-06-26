@@ -34,6 +34,8 @@ func write_state(s string) string {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("handle %s\n", r.RequestURI)
+
 	if r.RequestURI == "/" {
 		fmt.Fprintln(w, read_state())
 	} else {
@@ -42,9 +44,13 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	fmt.Println("state launch.")
 	addr := get_listen_addr()
 
 	fmt.Printf("State server started (listen %s).\n", addr)
 	http.HandleFunc("/", handler)
-	http.ListenAndServe(addr, nil)
+	err := http.ListenAndServe(addr, nil)
+	if err != nil {
+		panic(err.Error())
+	}
 }
