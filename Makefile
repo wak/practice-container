@@ -4,6 +4,7 @@ CONTAINERS := server_p1 server_c1 server_c2 server_state
 BIN := info $(CONTAINERS)
 export GOOS=linux
 export GOARCH=amd64
+export CGO_ENABLED=0
 
 go: $(BIN)
 
