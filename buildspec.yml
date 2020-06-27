@@ -1,0 +1,30 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      - $(aws ecr get-login --region ${AWS_DEFAULT_REGION})
+      - REPOHEAD=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
+      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+  build:
+    commands:
+      - make go
+      - make container
+      - docker tag server_p1:${IMAGE_TAG} ${REPOHEAD}/server_p1:${IMAGE_TAG}
+      - docker tag server_c1:${IMAGE_TAG} ${REPOHEAD}/server_c1:${IMAGE_TAG}
+      - docker tag server_c2:${IMAGE_TAG} ${REPOHEAD}/server_c2:${IMAGE_TAG}
+  post_build:
+    commands:
+      - docker push ${REPOHEAD}/server_p1:${IMAGE_TAG}
+      - docker push ${REPOHEAD}/server_c1:${IMAGE_TAG}
+      - docker push ${REPOHEAD}/server_c2:${IMAGE_TAG}
+      - echo "[" > imagedefinitions.json
+      - echo "{\"name\":\"server_p1\",\"imageUri\":\"${REPOHEAD}/server_p1:${IMAGE_TAG}\"}," >> imagedefinitions.json
+      - echo "{\"name\":\"server_c1\",\"imageUri\":\"${REPOHEAD}/server_c1:${IMAGE_TAG}\"}," >> imagedefinitions.json
+      - echo "{\"name\":\"server_c2\",\"imageUri\":\"${REPOHEAD}/server_c2:${IMAGE_TAG}\"}" >> imagedefinitions.json
+      - echo "]" >> imagedefinitions.json
+      - cat imagedefinitions.json
+artifacts:
+    files: imagedefinitions.json
