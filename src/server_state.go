@@ -8,7 +8,12 @@ import (
 )
 
 func get_state_file() string {
-	return filepath.Join(filepath.Dir(os.Args[0]), "server_state.data")
+	statefilepath := os.Getenv("STATEFILEPATH")
+	if len(statefilepath) > 0 {
+		return statefilepath
+	} else {
+		return filepath.Join(filepath.Dir(os.Args[0]), "server_state.data")
+	}
 }
 
 func read_state() string {
@@ -48,7 +53,9 @@ func main() {
 	addr := get_listen_addr()
 
 	fmt.Printf("State server started (listen %s).\n", addr)
+	fmt.Printf("State file = %s.\n", get_state_file())
 	http.HandleFunc("/", handler)
+	http.HandleFunc("/info", handler_info)
 	err := http.ListenAndServe(addr, nil)
 	if err != nil {
 		panic(err.Error())

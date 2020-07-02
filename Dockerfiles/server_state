@@ -1,6 +1,10 @@
 FROM alpine:latest
 
 COPY server_state /
+RUN mkdir /volume
+
+ENV STATEFILEPATH=
+ENV PORT=8080
 
 EXPOSE 8080
 

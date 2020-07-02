@@ -5,7 +5,7 @@ services:
     image: server_p1
     build:
       context: .
-      dockerfile: Dockerfile.server_p1
+      dockerfile: Dockerfiles/server_p1
     environment:
       C1: http://child1:8080/
       C2: http://child2:8080/
@@ -16,10 +16,22 @@ services:
     image: server_c1
     build:
       context: .
-      dockerfile: Dockerfile.server_c1
+      dockerfile: Dockerfiles/server_c1
 
   child2:
     image: server_c2
     build:
       context: .
-      dockerfile: Dockerfile.server_c2
+      dockerfile: Dockerfiles/server_c2
+
+  state:
+    image: server_state
+    build:
+      context: .
+      dockerfile: Dockerfiles/server_state
+    environment:
+      - STATEFILEPATH=/volume/state.txt
+    volumes:
+      - ./volume:/volume
+    ports:
+      - "8081:8080"
