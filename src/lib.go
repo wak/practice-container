@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"sort"
 	"strings"
 	"time"
 )
@@ -106,34 +107,76 @@ func handler_crash_c_all(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, get(child_crash_url(ChildUrl2)))
 }
 
-func write_info(w io.Writer) {
+func write_info(w io.Writer, r *http.Request) {
 	pid := os.Getpid()
 	hostname, _ := os.Hostname()
 
 	ResponseCount += 1
 
-	fmt.Fprintln(w, "<html><head><title>Test server</title></head><body><pre>")
+	fmt.Fprintln(w, "<html><head><title>INFO</title></head><body><pre>")
 	fmt.Fprintf(w, "Response: %d\n", ResponseCount)
-	fmt.Fprintf(w, "Time: %s\n", Now())
-	fmt.Fprintf(w, "Hostname: %s\n", hostname)
-	fmt.Fprintf(w, "PID: %d\n", pid)
+	fmt.Fprintf(w, "Time    : %s\n\n", Now())
 
-	fmt.Fprintf(w, "ARGV\n")
+	fmt.Fprintf(w, "Hostname: %s\n", hostname)
+	fmt.Fprintf(w, "PID     : %d\n", pid)
+
+	fmt.Fprintf(w, "\nARGV\n")
 	for i, v := range os.Args {
 		fmt.Fprintf(w, "  [%d] %s\n", i, v)
 	}
 
-	fmt.Fprintf(w, "ENV\n")
-	for _, e := range os.Environ() {
+	fmt.Fprintf(w, "\nENV\n")
+	env := os.Environ()
+	sort.Strings(env)
+	for _, e := range env {
 		pair := strings.SplitN(e, "=", 2)
-		fmt.Fprintf(w, "  %s = %s\n", pair[0], pair[1])
+		fmt.Fprintf(w, "  %-25s = %s\n", pair[0], pair[1])
+	}
+
+	if r != nil {
+		write_request(w, r)
 	}
 	fmt.Fprintln(w, "</pre></body></html>")
 }
 
+func write_request(w io.Writer, r *http.Request) {
+	fmt.Fprintln(w, "\nREQUEST:")
+	fmt.Fprintf(w, "  Method    : %s\n", r.Method)
+	fmt.Fprintf(w, "  RequestURI: %s\n", r.RequestURI)
+	fmt.Fprintf(w, "  RemoteAddr: %s\n", r.RemoteAddr)
+	fmt.Fprintf(w, "  Proto     : %s\n", r.Proto)
+	fmt.Fprintf(w, "  Host      : %s\n", r.Host)
+
+	fmt.Fprintln(w, "  HEADER:")
+	for _, name := range sorted_keys(r.Header) {
+		value := r.Header[name]
+
+		if len(value) == 1 {
+			fmt.Fprintf(w, "    %-25s = %s\n", name, value[0])
+		} else {
+			sort.Strings(value)
+			fmt.Fprintf(w, "    %-25s =\n", name)
+			for _, v := range value {
+				fmt.Fprintf(w, "      %s\n", v)
+			}
+		}
+	}
+}
+
+func sorted_keys(m map[string][]string) []string {
+    s := make([]string, len(m))
+    index := 0
+    for key := range m {
+        s[index] = key
+        index++
+    }
+    sort.Strings(s)
+	return s
+}
+
 func handler_info(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("handle %s\n", r.RequestURI)
-	write_info(w)
+	write_info(w, r)
 }
 
 func get_listen_addr() string {
@@ -144,7 +187,6 @@ func get_listen_addr() string {
 	} else {
 		return ":8080"
 	}
-
 }
 
 func run_parent(server_name string, revision string) {
