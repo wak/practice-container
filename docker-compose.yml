@@ -17,12 +17,16 @@ services:
     build:
       context: .
       dockerfile: Dockerfiles/server_c1
+    ports:
+      - "8081:8080"
 
   child2:
     image: server_c2
     build:
       context: .
       dockerfile: Dockerfiles/server_c2
+    ports:
+      - "8082:8080"
 
   state:
     image: server_state
@@ -34,4 +38,4 @@ services:
     volumes:
       - ./volume:/volume
     ports:
-      - "8081:8080"
+      - "8083:8080"

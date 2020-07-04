@@ -36,12 +36,12 @@ func get(url string) string {
 	}
 	resp, err := client.Get(url)
 	if err != nil {
-		return err.Error()
+		return "FAILED: " + err.Error()
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return err.Error()
+		return "FAILED: " + err.Error()
 	}
 	return string(body)
 }
@@ -52,17 +52,22 @@ func child_crash_url(url *url.URL) string {
 	return copiedURL.String()
 }
 
-func write_parent_default(w io.Writer) {
+func who_am_i(who string) string {
 	hostname, _ := os.Hostname()
-	ResponseCount += 1
 
-	fmt.Fprintf(w,
-		"I am parent server %s (host: %s, runat: %s, rev: %s, call: %d).\n",
-		ServerName,
+	return fmt.Sprintf("I am %s (host: %s, runat: %s, rev: %s, call: %d, PID: %d).\n",
+		who,
 		hostname,
 		RunAt.Format("2006-01-02 03:04:05"),
 		AppRevision,
-		ResponseCount)
+		ResponseCount,
+		os.Getpid())
+}
+
+func write_parent_default(w io.Writer) {
+	ResponseCount += 1
+
+	fmt.Fprintf(w, who_am_i(ServerName))
 	fmt.Fprintf(w, "  C1 ... %s\n", strings.TrimRight(get(ChildUrl1.String()), "\n"))
 	fmt.Fprintf(w, "  C2 ... %s\n", strings.TrimRight(get(ChildUrl2.String()), "\n"))
 }
@@ -164,13 +169,13 @@ func write_request(w io.Writer, r *http.Request) {
 }
 
 func sorted_keys(m map[string][]string) []string {
-    s := make([]string, len(m))
-    index := 0
-    for key := range m {
-        s[index] = key
-        index++
-    }
-    sort.Strings(s)
+	s := make([]string, len(m))
+	index := 0
+	for key := range m {
+		s[index] = key
+		index++
+	}
+	sort.Strings(s)
 	return s
 }
 
@@ -224,15 +229,7 @@ func run_parent(server_name string, revision string) {
 func handler_child_default(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("handle %s\n", r.RequestURI)
 	ResponseCount += 1
-	hostname, _ := os.Hostname()
-
-	fmt.Fprintf(w,
-		"I am %s (host: %s, runat: %s, rev: %s, call: %d).\n",
-		ServerName,
-		hostname,
-		RunAt.Format("2006-01-02 03:04:05"),
-		AppRevision,
-		ResponseCount)
+	fmt.Fprintf(w, who_am_i(ServerName))
 }
 
 func run_child(server_name string, revision string) {
