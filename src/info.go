@@ -12,7 +12,8 @@ func main() {
 	} else {
 		addr := get_listen_addr()
 		fmt.Printf("Test server started (listen %s).\n", addr)
-		http.HandleFunc("/", handler_info)
+		http.HandleFunc("/all", handler_info)
+		http.HandleFunc("/", handler_info_oneliner)
 		http.ListenAndServe(addr, nil)
 	}
 }

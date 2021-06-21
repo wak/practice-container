@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/user"
 	"path"
 	"sort"
 	"strings"
@@ -115,6 +116,7 @@ func handler_crash_c_all(w http.ResponseWriter, r *http.Request) {
 func write_info(w io.Writer, r *http.Request) {
 	pid := os.Getpid()
 	hostname, _ := os.Hostname()
+	userCurrent, _ := user.Current()
 
 	ResponseCount += 1
 
@@ -124,6 +126,8 @@ func write_info(w io.Writer, r *http.Request) {
 
 	fmt.Fprintf(w, "Hostname: %s\n", hostname)
 	fmt.Fprintf(w, "PID     : %d\n", pid)
+	fmt.Fprintf(w, "UID     : %s\n", userCurrent.Uid)
+	fmt.Fprintf(w, "GID     : %s\n", userCurrent.Gid)
 
 	fmt.Fprintf(w, "\nARGV\n")
 	for i, v := range os.Args {
@@ -142,6 +146,17 @@ func write_info(w io.Writer, r *http.Request) {
 		write_request(w, r)
 	}
 	fmt.Fprintln(w, "</pre></body></html>")
+}
+
+func write_info_oneliner(w io.Writer, r *http.Request) {
+	pid := os.Getpid()
+	hostname, _ := os.Hostname()
+	userCurrent, _ := user.Current()
+
+	fmt.Fprintf(w, "[%s] host:%s pid:%d, uid:%s, gid:%s",
+		Now().Format("2006/01/02 15:04:05"),
+		hostname,
+		pid, userCurrent.Uid, userCurrent.Gid)
 }
 
 func write_request(w io.Writer, r *http.Request) {
@@ -177,6 +192,11 @@ func sorted_keys(m map[string][]string) []string {
 	}
 	sort.Strings(s)
 	return s
+}
+
+func handler_info_oneliner(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("handle %s\n", r.RequestURI)
+	write_info_oneliner(w, r)
 }
 
 func handler_info(w http.ResponseWriter, r *http.Request) {

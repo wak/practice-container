@@ -4,7 +4,7 @@ CONTAINERS := server_p1 server_c1 server_c2 server_state
 BIN := info $(CONTAINERS)
 export GOOS=linux
 export GOARCH=amd64
-export CGO_ENABLED=0
+# export CGO_ENABLED=0
 
 go: $(BIN)
 
@@ -14,10 +14,10 @@ clean:
 container: go $(foreach t,$(CONTAINERS),container/$(t))
 
 container/%: Dockerfiles/%
-	docker image build -t $(patsubst Dockerfiles/%,%,$<) -f $< .
+	docker image build -t wakabayashi/$(patsubst Dockerfiles/%,%,$<) -f $< .
 
 $(BIN): %: src/%.go src/lib.go
-	go build $^
+	go build -a -tags netgo -installsuffix netgo --ldflags '-extldflags "-static"' $^
 
 # run: docker
 # 	docker run --rm -it --name sample01 -p 8080:8080 sample
