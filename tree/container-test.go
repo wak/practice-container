@@ -15,6 +15,10 @@ import (
 	"strconv"
 	"time"
 	"context"
+	"crypto/sha256"
+    "encoding/hex"
+	"path/filepath"
+	"regexp"
 )
 
 var AppRevision = "r1"
@@ -66,13 +70,18 @@ func stop_child(w http.ResponseWriter, target string, method string) {
 func who_am_i(who string) string {
 	hostname, _ := os.Hostname()
 
-	return fmt.Sprintf("%s (host: %s, runat: %s, rev: %s, call: %d, PID: %d).\n",
+	state, err := read_state()
+	if err != nil {
+		state = ""
+	}
+	return fmt.Sprintf("%s (host: %s, runat: %s, rev: %s, call: %d, PID: %d, file: %s).\n",
 		who,
 		hostname,
 		RunAt.Format("2006-01-02 03:04:05"),
 		AppRevision,
 		ResponseCount,
-		os.Getpid())
+		os.Getpid(),
+		state)
 }
 
 func write_request(w io.Writer, r *http.Request) {
@@ -116,8 +125,52 @@ func handler_root(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func handler_file(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("handle %s\n", r.RequestURI)
+	ResponseCount += 1
+
+	if r.RequestURI == "/file" || r.RequestURI == "/file/" {
+		state, _ := read_state()
+		fmt.Fprintln(w, state)
+	} else {
+		fmt.Fprintln(w, write_state(r.RequestURI[6:]))
+	}
+}
+
+func get_state_file() string {
+	statefilepath := os.Getenv("STATEFILEPATH")
+	if len(statefilepath) > 0 {
+		return statefilepath
+	} else {
+		return filepath.Join(filepath.Dir(os.Args[0]), "server_state.data")
+	}
+}
+
+func read_state() (string, error) {
+	file, err := os.Open(get_state_file())
+	if err != nil {
+		return err.Error(), err
+	}
+	defer file.Close()
+
+	buf := make([]byte, 100)
+	n, err := file.Read(buf)
+	return string(buf[:n]), nil
+}
+
+func write_state(s string) string {
+	file, err := os.Create(get_state_file())
+	if err != nil {
+		return err.Error()
+	}
+	defer file.Close()
+	file.Write(([]byte)(s))
+	return "state saved."
+}
+
 func handler_stop(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("handle %s\n", r.RequestURI)
+	ResponseCount += 1
 
 	parts := strings.Split(r.RequestURI, "/")
 	if len(parts) != 4 {
@@ -165,11 +218,10 @@ func sorted_keys(m map[string][]string) []string {
 
 func handler_info(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("handle %s\n", r.RequestURI)
+	ResponseCount += 1
 
 	pid := os.Getpid()
 	hostname, _ := os.Hostname()
-
-	ResponseCount += 1
 
 	fmt.Fprintln(w, "<html><head><title>INFO</title></head><body><pre>")
 	fmt.Fprintf(w, "Response: %d\n", ResponseCount)
@@ -197,6 +249,13 @@ func handler_info(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "</pre></body></html>")
 }
 
+func make_random_string() string {
+	s := Now().String()
+	r := sha256.Sum256([]byte(s))
+	b := r[:]
+	return hex.EncodeToString(b)
+}
+
 func handler_api(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("handle %s\n", r.RequestURI)
 	ResponseCount += 1
@@ -207,7 +266,14 @@ func handler_api(w http.ResponseWriter, r *http.Request) {
 	entry := func (desc string, link string) { fmt.Fprintf(w, "<li>%s: <a href=\"%s\">%s</a></li>\n", desc, link, link) }
 	entry("Server status", "/")
 	entry("Show information", "./info")
+	entry("Write file: random", "./file/"  + make_random_string())
+	now := regexp.MustCompile("[+ /:]").ReplaceAllString(Now().String(), "_")
+	entry("Write file: time", "./file/"  + now)
+	entry("Read file", "./file")
 	fmt.Fprintln(w, "</ul>")
+
+	state, _ := read_state()
+	fmt.Fprintf(w, "Current state file: <ul><li>path: %s</li><li>value: %s</li></ul>\n", get_state_file(), state)
 
 	for n, node_url := range node_urls {
 		fmt.Fprintf(w, "<h1>Node %d API</h1>\n", n + 1)
@@ -269,6 +335,8 @@ func run() {
 	http.HandleFunc("/api", handler_api)
 	http.HandleFunc("/stop/", handler_stop)
 	http.HandleFunc("/info", handler_info)
+	http.HandleFunc("/file", handler_file)
+	http.HandleFunc("/file/", handler_file)
 
 	srv := http.Server{ Addr: addr }
     go func() {
