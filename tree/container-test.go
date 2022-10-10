@@ -20,7 +20,6 @@ import (
 var AppRevision = "r1"
 var NodeName = "P1"
 
-// common
 var RunAt = Now()
 var ResponseCount = 0
 
@@ -198,6 +197,30 @@ func handler_info(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "</pre></body></html>")
 }
 
+func handler_api(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("handle %s\n", r.RequestURI)
+	ResponseCount += 1
+
+	fmt.Fprintln(w, "<html><head><title>API List</title></head><body>")
+	fmt.Fprintln(w, "<h1>This Process API</h1>")
+	fmt.Fprintln(w, "<ul>")
+	entry := func (desc string, link string) { fmt.Fprintf(w, "<li>%s: <a href=\"%s\">%s</a></li>\n", desc, link, link) }
+	entry("Server status", "/")
+	entry("Show information", "./info")
+	fmt.Fprintln(w, "</ul>")
+
+	for n, node_url := range node_urls {
+		fmt.Fprintf(w, "<h1>Node %d API</h1>\n", n + 1)
+		fmt.Fprintln(w, "<ul>")
+		entry("Direct URL",node_url.String())
+		entry("Stop with panic", path.Join("./", "stop", "panic", strconv.Itoa(n + 1)))
+		entry("Stop with error", path.Join("./", "stop", "error", strconv.Itoa(n + 1)))
+		entry("Stop with success", path.Join("./", "stop", "success", strconv.Itoa(n + 1)))
+		fmt.Fprintln(w, "</ul>")
+	}
+	fmt.Fprintln(w, "</body></html>")
+}
+
 func get_listen_addr() string {
 	if len(os.Getenv("PORT")) > 0 {
 		return ":" + os.Getenv("PORT")
@@ -243,6 +266,7 @@ func run() {
 
 	addr := get_listen_addr()
 	http.HandleFunc("/", handler_root)
+	http.HandleFunc("/api", handler_api)
 	http.HandleFunc("/stop/", handler_stop)
 	http.HandleFunc("/info", handler_info)
 
