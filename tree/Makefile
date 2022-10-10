@@ -17,5 +17,8 @@ container: go
 container-test: container-test.go
 	go build $^
 
+test-codebuild:
+	./codebuild_build.sh -i public.ecr.aws/codebuild/amazonlinux2-x86_64-standard:4.0 -a outdir
+
 # run: docker
 # 	docker run --rm -it --name sample01 -p 8080:8080 sample

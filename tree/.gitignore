@@ -1,1 +1,3 @@
 container-test
+codebuild_build.sh
+outdir/

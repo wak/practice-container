@@ -1,0 +1,22 @@
+version: 0.2
+batch:
+  fast-fail: true
+
+phases:
+  build:
+    on-failure: CONTINUE
+    commands:
+      - ls
+      - date | tee -a config.txt
+      - env | tee -a config.txt
+      - echo "============================================================" | tee -a config.txt
+      - ls | tee -a config.txt
+      - echo "============================================================" | tee -a config.txt
+      - pwd | tee -a config.txt
+      - date | tee -a $CODEBUILD_SRC_DIR_stage2of1/overwrite-check
+      # - go version
+      # - go build container-test.go
+artifacts:
+  files:
+    - config.txt
+    # - 'container-test'
