@@ -1,0 +1,39 @@
+version: '3'
+
+services:
+  parent:
+    image: container-test
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      NODENAME: PARENT
+      NODE1: http://node1:8080/
+      NODE2: http://n2:8080/
+      NODE3: http://n3:8080/
+    ports:
+      - "8080:8080"
+
+  node1:
+    image: container-test
+    build:
+      context: .
+      dockerfile: Dockerfiles/server_c1
+    environment:
+      NODENAME: node01
+
+    # ↓ホストにバインドする場合に指定する。
+    # ports:
+      # - "8081:8080"
+
+  # state:
+  #   image: server_state
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfiles/server_state
+  #   environment:
+  #     - STATEFILEPATH=/volume/state.txt
+  #   volumes:
+  #     - ./volume:/volume
+  #   ports:
+  #     - "8083:8080"
