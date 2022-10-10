@@ -16,9 +16,6 @@ services:
 
   node1:
     image: container-test
-    build:
-      context: .
-      dockerfile: Dockerfiles/server_c1
     environment:
       NODENAME: node01
 

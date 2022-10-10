@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/signal"
+	"syscall"
 	"path"
 	"sort"
 	"strings"
@@ -245,14 +247,21 @@ func run() {
 	http.HandleFunc("/info", handler_info)
 
 	srv := http.Server{ Addr: addr }
-	stop_chan = make(chan int)
     go func() {
+		stop_chan = make(chan int)
     	<-stop_chan
 		time.AfterFunc(time.Second*5, func() {
 			fmt.Printf("shutting down server.\n")
 			srv.Shutdown(context.TODO())
 		})
     }()
+	go func() {
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGINT)
+		<-sig
+		fmt.Printf("signal received.\n")
+		srv.Shutdown(context.TODO())
+	}()
 
 	fmt.Printf("Parent node %s started (listen %s).\n", NodeName, addr)
 	err := srv.ListenAndServe()
