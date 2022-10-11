@@ -1,6 +1,9 @@
 package main
 
 import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -8,20 +11,16 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
-	"syscall"
 	"path"
-	"sort"
-	"strings"
-	"strconv"
-	"time"
-	"context"
-	"crypto/sha256"
-    "encoding/hex"
 	"path/filepath"
 	"regexp"
+	"sort"
+	"strconv"
+	"strings"
+	"syscall"
+	"time"
 )
 
-var AppRevision = "r1"
 var NodeName = "P1"
 
 var RunAt = Now()
@@ -74,11 +73,11 @@ func who_am_i(who string) string {
 	if err != nil {
 		state = ""
 	}
-	return fmt.Sprintf("%s (host: %s, runat: %s, rev: %s, call: %d, PID: %d, file: %s).\n",
+	return fmt.Sprintf("%s (host: %s, ver: %s, runat: %s, call: %d, PID: %d, file: %s).\n",
 		who,
 		hostname,
+		AppVersion,
 		RunAt.Format("2006-01-02 03:04:05"),
-		AppRevision,
 		ResponseCount,
 		os.Getpid(),
 		state)
@@ -120,8 +119,8 @@ func handler_root(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, who_am_i(NodeName))
 	for n, node_url := range node_urls {
 		fmt.Fprintf(w, "  NODE[%d] ... %s\n",
-					n + 1,
-					strings.TrimRight(get(node_url.String()), "\n"))
+			n+1,
+			strings.TrimRight(get(node_url.String()), "\n"))
 	}
 }
 
@@ -192,12 +191,12 @@ func handler_stop(w http.ResponseWriter, r *http.Request) {
 		case "success":
 			fmt.Println("stop success request received.")
 			stop_status = 0
-			stop_chan<-1
+			stop_chan <- 1
 			fmt.Fprintf(w, "Server %s will stop with success status after 5 seconds.\n", NodeName)
 		case "error":
 			fmt.Println("stop error request received.")
 			stop_status = 1
-			stop_chan<-1
+			stop_chan <- 1
 			fmt.Fprintf(w, "Server %s will stop with error status after 5 seconds.\n", NodeName)
 		}
 	} else {
@@ -263,12 +262,14 @@ func handler_api(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "<html><head><title>API List</title></head><body>")
 	fmt.Fprintln(w, "<h1>This Process API</h1>")
 	fmt.Fprintln(w, "<ul>")
-	entry := func (desc string, link string) { fmt.Fprintf(w, "<li>%s: <a href=\"%s\">%s</a></li>\n", desc, link, link) }
+	entry := func(desc string, link string) {
+		fmt.Fprintf(w, "<li>%s: <a href=\"%s\">%s</a></li>\n", desc, link, link)
+	}
 	entry("Server status", "/")
 	entry("Show information", "./info")
-	entry("Write file: random", "./file/"  + make_random_string())
+	entry("Write file: random", "./file/"+make_random_string())
 	now := regexp.MustCompile("[+ /:]").ReplaceAllString(Now().String(), "_")
-	entry("Write file: time", "./file/"  + now)
+	entry("Write file: time", "./file/"+now)
 	entry("Read file", "./file")
 	fmt.Fprintln(w, "</ul>")
 
@@ -276,12 +277,12 @@ func handler_api(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Current state file: <ul><li>path: %s</li><li>value: %s</li></ul>\n", get_state_file(), state)
 
 	for n, node_url := range node_urls {
-		fmt.Fprintf(w, "<h1>Node %d API</h1>\n", n + 1)
+		fmt.Fprintf(w, "<h1>Node %d API</h1>\n", n+1)
 		fmt.Fprintln(w, "<ul>")
-		entry("Direct URL",node_url.String())
-		entry("Stop with panic", path.Join("./", "stop", "panic", strconv.Itoa(n + 1)))
-		entry("Stop with error", path.Join("./", "stop", "error", strconv.Itoa(n + 1)))
-		entry("Stop with success", path.Join("./", "stop", "success", strconv.Itoa(n + 1)))
+		entry("Direct URL", node_url.String())
+		entry("Stop with panic", path.Join("./", "stop", "panic", strconv.Itoa(n+1)))
+		entry("Stop with error", path.Join("./", "stop", "error", strconv.Itoa(n+1)))
+		entry("Stop with success", path.Join("./", "stop", "success", strconv.Itoa(n+1)))
 		fmt.Fprintln(w, "</ul>")
 	}
 	fmt.Fprintln(w, "</body></html>")
@@ -338,15 +339,15 @@ func run() {
 	http.HandleFunc("/file", handler_file)
 	http.HandleFunc("/file/", handler_file)
 
-	srv := http.Server{ Addr: addr }
-    go func() {
+	srv := http.Server{Addr: addr}
+	go func() {
 		stop_chan = make(chan int)
-    	<-stop_chan
+		<-stop_chan
 		time.AfterFunc(time.Second*5, func() {
 			fmt.Printf("shutting down server.\n")
 			srv.Shutdown(context.TODO())
 		})
-    }()
+	}()
 	go func() {
 		sig := make(chan os.Signal, 1)
 		signal.Notify(sig, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGINT)
@@ -364,7 +365,6 @@ func run() {
 
 func main() {
 	NodeName = get_node_name()
-	AppRevision = "1"
 
 	run()
 

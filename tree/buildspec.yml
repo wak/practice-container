@@ -7,16 +7,20 @@ phases:
     on-failure: CONTINUE
     commands:
       - ls
-      - date | tee -a config.txt
-      - env | tee -a config.txt
-      - echo "============================================================" | tee -a config.txt
-      - ls | tee -a config.txt
-      - echo "============================================================" | tee -a config.txt
-      - pwd | tee -a config.txt
-      - date | tee -a $CODEBUILD_SRC_DIR_stage2of1/overwrite-check
-      # - go version
-      # - go build container-test.go
+      - date | tee -a envnote.txt
+      - echo "============================================================" | tee -a envnote.txt
+      - pwd | tee -a envnote.txt
+      - echo "============================================================" | tee -a envnote.txt
+      - env | tee -a envnote.txt
+      - echo "============================================================" | tee -a envnote.txt
+      - ls -l | tee -a envnote.txt
+      - echo "============================================================" | tee -a envnote.txt
+      - go version
+      - ./update-version.sh
+      - cat version.go
+      - go build container-test.go version.go
 artifacts:
   files:
-    - config.txt
-    # - 'container-test'
+    - envnote.txt
+    - container-test
+

@@ -14,7 +14,7 @@ clean:
 container: go
 	docker image build -t container-test .
 
-container-test: container-test.go
+container-test: container-test.go version.go
 	go build $^
 
 test-codebuild:
