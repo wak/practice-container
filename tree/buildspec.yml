@@ -16,11 +16,12 @@ phases:
       - ls -l | tee -a envnote.txt
       - echo "============================================================" | tee -a envnote.txt
       - go version
-      - ./update-version.sh
+      - bash ./update-version.sh
       - cat version.go
       - go build container-test.go version.go
+      - docker image build -t container-test .
+      - docker tag ${ECRRepositoryUri}:v2
+      - docker push ${ECRRepositoryUri}:v2
 artifacts:
   files:
     - envnote.txt
-    - container-test
-

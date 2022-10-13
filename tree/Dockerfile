@@ -1,7 +1,7 @@
-FROM alpine:latest
+FROM public.ecr.aws/docker/library/alpine:latest
 
 COPY container-test /
-ENV PORT 8080
+ENV PORT 80
 EXPOSE $PORT
 
 ENTRYPOINT [ "/container-test" ]
