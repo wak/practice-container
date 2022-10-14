@@ -107,8 +107,12 @@ func write_request(w io.Writer, r *http.Request) {
 	}
 }
 
+func log_request(handler_name string, r *http.Request) {
+	fmt.Printf("[%-10s] %-13s %s %s - %s\n", handler_name, r.RemoteAddr, r.Method, r.RequestURI, r.Header["User-Agent"])
+}
+
 func handler_root(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("handle %s\n", r.RequestURI)
+	log_request("default", r)
 
 	if r.RequestURI != "/" {
 		fmt.Fprintln(w, "unsupported path")
@@ -125,7 +129,7 @@ func handler_root(w http.ResponseWriter, r *http.Request) {
 }
 
 func handler_file(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("handle %s\n", r.RequestURI)
+	log_request("file", r)
 	ResponseCount += 1
 
 	if r.RequestURI == "/file" || r.RequestURI == "/file/" {
@@ -168,7 +172,7 @@ func write_state(s string) string {
 }
 
 func handler_stop(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("handle %s\n", r.RequestURI)
+	log_request("stop", r)
 	ResponseCount += 1
 
 	parts := strings.Split(r.RequestURI, "/")
@@ -216,7 +220,7 @@ func sorted_keys(m map[string][]string) []string {
 }
 
 func handler_info(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("handle %s\n", r.RequestURI)
+	log_request("info", r)
 	ResponseCount += 1
 
 	pid := os.Getpid()
@@ -256,7 +260,7 @@ func make_random_string() string {
 }
 
 func handler_api(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("handle %s\n", r.RequestURI)
+	log_request("api", r)
 	ResponseCount += 1
 
 	fmt.Fprintln(w, "<html><head><title>API List</title></head><body>")
