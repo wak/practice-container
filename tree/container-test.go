@@ -108,7 +108,13 @@ func write_request(w io.Writer, r *http.Request) {
 }
 
 func log_request(handler_name string, r *http.Request) {
-	fmt.Printf("[%-10s] %-13s %s %s - %s\n", handler_name, r.RemoteAddr, r.Method, r.RequestURI, r.Header["User-Agent"])
+	fmt.Printf("[%-7s] %-13s %s %s - %s\n",
+		handler_name,
+		r.RemoteAddr,
+		r.Method,
+		r.RequestURI,
+		r.Header.Get("User-Agent"),
+	)
 }
 
 func handler_root(w http.ResponseWriter, r *http.Request) {
@@ -126,6 +132,17 @@ func handler_root(w http.ResponseWriter, r *http.Request) {
 			n+1,
 			strings.TrimRight(get(node_url.String()), "\n"))
 	}
+}
+
+func handler_health(w http.ResponseWriter, r *http.Request) {
+	log_request("health", r)
+	ResponseCount += 1
+
+	fmt.Fprintf(w, "%s %s %d\n",
+		Now().Format("2006-01-02 03:04:05"),
+		NodeName,
+		ResponseCount,
+	)
 }
 
 func handler_file(w http.ResponseWriter, r *http.Request) {
@@ -337,6 +354,7 @@ func run() {
 
 	addr := get_listen_addr()
 	http.HandleFunc("/", handler_root)
+	http.HandleFunc("/health", handler_health)
 	http.HandleFunc("/api", handler_api)
 	http.HandleFunc("/stop/", handler_stop)
 	http.HandleFunc("/info", handler_info)
@@ -354,9 +372,9 @@ func run() {
 	}()
 	go func() {
 		sig := make(chan os.Signal, 1)
-		signal.Notify(sig, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGINT)
-		<-sig
-		fmt.Printf("signal received.\n")
+		signal.Notify(sig, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
+		s := <-sig
+		fmt.Printf("signal %s received.\n", s.String())
 		srv.Shutdown(context.TODO())
 	}()
 
