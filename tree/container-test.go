@@ -77,7 +77,7 @@ func who_am_i(who string) string {
 		who,
 		hostname,
 		AppVersion,
-		RunAt.Format("2006-01-02 03:04:05"),
+		RunAt.Format("2006-01-02 15:04:05"),
 		ResponseCount,
 		os.Getpid(),
 		state)
@@ -121,9 +121,21 @@ func handler_root(w http.ResponseWriter, r *http.Request) {
 	log_request("default", r)
 
 	if r.RequestURI != "/" {
+		w.WriteHeader(404)
 		fmt.Fprintln(w, "unsupported path")
 		return
 	}
+	ResponseCount += 1
+
+	fmt.Fprintf(w, "%s %s %d\n",
+		Now().Format("2006-01-02 15:04:05"),
+		NodeName,
+		ResponseCount,
+	)
+}
+
+func handler_status(w http.ResponseWriter, r *http.Request) {
+	log_request("status", r)
 	ResponseCount += 1
 
 	fmt.Fprintf(w, who_am_i(NodeName))
@@ -138,11 +150,7 @@ func handler_health(w http.ResponseWriter, r *http.Request) {
 	log_request("health", r)
 	ResponseCount += 1
 
-	fmt.Fprintf(w, "%s %s %d\n",
-		Now().Format("2006-01-02 03:04:05"),
-		NodeName,
-		ResponseCount,
-	)
+	fmt.Fprint(w, "OK")
 }
 
 func handler_file(w http.ResponseWriter, r *http.Request) {
@@ -286,7 +294,9 @@ func handler_api(w http.ResponseWriter, r *http.Request) {
 	entry := func(desc string, link string) {
 		fmt.Fprintf(w, "<li>%s: <a href=\"%s\">%s</a></li>\n", desc, link, link)
 	}
-	entry("Server status", "/")
+	entry("Server simple message", "/")
+	entry("Server status", "/status")
+	entry("Server health", "/health")
 	entry("Show information", "./info")
 	entry("Write file: random", "./file/"+make_random_string())
 	now := regexp.MustCompile("[+ /:]").ReplaceAllString(Now().String(), "_")
@@ -355,6 +365,7 @@ func run() {
 	addr := get_listen_addr()
 	http.HandleFunc("/", handler_root)
 	http.HandleFunc("/health", handler_health)
+	http.HandleFunc("/status", handler_status)
 	http.HandleFunc("/api", handler_api)
 	http.HandleFunc("/stop/", handler_stop)
 	http.HandleFunc("/info", handler_info)
