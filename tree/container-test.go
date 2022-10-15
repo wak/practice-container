@@ -285,6 +285,12 @@ func make_random_string() string {
 	return hex.EncodeToString(b)
 }
 
+func handler_version(w http.ResponseWriter, r *http.Request) {
+	log_request("version", r)
+	ResponseCount += 1
+	fmt.Fprintln(w, AppVersion)
+}
+
 func handler_api(w http.ResponseWriter, r *http.Request) {
 	log_request("api", r)
 	ResponseCount += 1
@@ -296,6 +302,7 @@ func handler_api(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "<li>%s: <a href=\"%s\">%s</a></li>\n", desc, link, link)
 	}
 	entry("Server simple message", "/")
+	entry("Server version", "/version")
 	entry("Server status", "/status")
 	entry("Server health", "/health")
 	entry("Show information", "./info")
@@ -372,6 +379,7 @@ func run() {
 	http.HandleFunc("/", handler_root)
 	http.HandleFunc("/health", handler_health)
 	http.HandleFunc("/status", handler_status)
+	http.HandleFunc("/version", handler_version)
 	http.HandleFunc("/api", handler_api)
 	http.HandleFunc("/stop/", handler_stop)
 	http.HandleFunc("/info", handler_info)
