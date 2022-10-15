@@ -127,9 +127,10 @@ func handler_root(w http.ResponseWriter, r *http.Request) {
 	}
 	ResponseCount += 1
 
-	fmt.Fprintf(w, "%s %s %d\n",
+	fmt.Fprintf(w, "%s %s %s %d\n",
 		Now().Format("2006-01-02 15:04:05"),
 		NodeName,
+		AppVersion,
 		ResponseCount,
 	)
 }
