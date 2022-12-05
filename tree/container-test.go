@@ -21,12 +21,12 @@ import (
 	"time"
 )
 
-var NodeName = "P1"
+var nodeName = "P1"
 
-var RunAt = Now()
-var ResponseCount = 0
+var runAt = now()
+var responseCount = 0
 
-func Now() time.Time {
+func now() time.Time {
 	jst := time.FixedZone("Asia/Tokyo", 9*60*60)
 	return time.Now().In(jst)
 }
@@ -47,29 +47,29 @@ func get(url string) string {
 	return string(body)
 }
 
-func make_node_stop_url(node_number int, method string) string {
-	copiedURL := *node_urls[node_number-1]
+func makeNodeStopUrl(nodeNumber int, method string) string {
+	copiedURL := *nodeUrls[nodeNumber-1]
 	copiedURL.Path = path.Join(copiedURL.Path, "stop", method, "self")
 	return copiedURL.String()
 }
 
-func stop_child(w http.ResponseWriter, target string, method string) {
-	node_number, err := strconv.Atoi(target)
+func stopChild(w http.ResponseWriter, target string, method string) {
+	nodeNumber, err := strconv.Atoi(target)
 	if err != nil {
 		fmt.Printf("Invalid target number: %s\n", target)
 		return
 	}
-	if len(node_urls) < node_number {
-		fmt.Printf("node not found: %d\n", node_number)
+	if len(nodeUrls) < nodeNumber {
+		fmt.Printf("node not found: %d\n", nodeNumber)
 		return
 	}
-	fmt.Fprintf(w, "%s", get(make_node_stop_url(node_number, method)))
+	fmt.Fprintf(w, "%s", get(makeNodeStopUrl(nodeNumber, method)))
 }
 
-func who_am_i(who string) string {
+func whoAmI(who string) string {
 	hostname, _ := os.Hostname()
 
-	state, err := read_state()
+	state, err := readState()
 	if err != nil {
 		state = ""
 	}
@@ -77,13 +77,13 @@ func who_am_i(who string) string {
 		who,
 		hostname,
 		AppVersion,
-		RunAt.Format("2006-01-02 15:04:05"),
-		ResponseCount,
+		runAt.Format("2006-01-02 15:04:05"),
+		responseCount,
 		os.Getpid(),
 		state)
 }
 
-func write_request(w io.Writer, r *http.Request) {
+func dumpRequest(w io.Writer, r *http.Request) {
 	fmt.Fprintln(w, "\nREQUEST:")
 	fmt.Fprintf(w, "  Method    : %s\n", r.Method)
 	fmt.Fprintf(w, "  RequestURI: %s\n", r.RequestURI)
@@ -92,7 +92,7 @@ func write_request(w io.Writer, r *http.Request) {
 	fmt.Fprintf(w, "  Host      : %s\n", r.Host)
 
 	fmt.Fprintln(w, "  HEADER:")
-	for _, name := range sorted_keys(r.Header) {
+	for _, name := range sortedKeys(r.Header) {
 		value := r.Header[name]
 
 		if len(value) == 1 {
@@ -107,9 +107,9 @@ func write_request(w io.Writer, r *http.Request) {
 	}
 }
 
-func log_request(handler_name string, r *http.Request) {
+func logRequest(handlerName string, r *http.Request) {
 	fmt.Printf("[%-7s] %-13s %s %s - %s\n",
-		handler_name,
+		handlerName,
 		r.RemoteAddr,
 		r.Method,
 		r.RequestURI,
@@ -117,56 +117,56 @@ func log_request(handler_name string, r *http.Request) {
 	)
 }
 
-func handler_root(w http.ResponseWriter, r *http.Request) {
-	log_request("default", r)
+func handlerRoot(w http.ResponseWriter, r *http.Request) {
+	logRequest("default", r)
 
 	if r.RequestURI != "/" {
 		w.WriteHeader(404)
 		fmt.Fprintln(w, "unsupported path")
 		return
 	}
-	ResponseCount += 1
+	responseCount += 1
 
 	fmt.Fprintf(w, "%s %s %s %d\n",
-		Now().Format("2006-01-02 15:04:05"),
-		NodeName,
+		now().Format("2006-01-02 15:04:05"),
+		nodeName,
 		AppVersion,
-		ResponseCount,
+		responseCount,
 	)
 }
 
-func handler_status(w http.ResponseWriter, r *http.Request) {
-	log_request("status", r)
-	ResponseCount += 1
+func handlerStatus(w http.ResponseWriter, r *http.Request) {
+	logRequest("status", r)
+	responseCount += 1
 
-	fmt.Fprintf(w, who_am_i(NodeName))
-	for n, node_url := range node_urls {
+	fmt.Fprintf(w, whoAmI(nodeName))
+	for n, nodeUrl := range nodeUrls {
 		fmt.Fprintf(w, "  NODE[%d] ... %s\n",
 			n+1,
-			strings.TrimRight(get(node_url.String()), "\n"))
+			strings.TrimRight(get(nodeUrl.String()), "\n"))
 	}
 }
 
-func handler_health(w http.ResponseWriter, r *http.Request) {
-	log_request("health", r)
-	ResponseCount += 1
+func handlerHealth(w http.ResponseWriter, r *http.Request) {
+	logRequest("health", r)
+	responseCount += 1
 
 	fmt.Fprint(w, "OK")
 }
 
-func handler_file(w http.ResponseWriter, r *http.Request) {
-	log_request("file", r)
-	ResponseCount += 1
+func handlerFile(w http.ResponseWriter, r *http.Request) {
+	logRequest("file", r)
+	responseCount += 1
 
 	if r.RequestURI == "/file" || r.RequestURI == "/file/" {
-		state, _ := read_state()
+		state, _ := readState()
 		fmt.Fprintln(w, state)
 	} else {
-		fmt.Fprintln(w, write_state(r.RequestURI[6:]))
+		fmt.Fprintln(w, writeState(r.RequestURI[6:]))
 	}
 }
 
-func get_state_file() string {
+func getStateFile() string {
 	statefilepath := os.Getenv("STATEFILEPATH")
 	if len(statefilepath) > 0 {
 		return statefilepath
@@ -175,8 +175,8 @@ func get_state_file() string {
 	}
 }
 
-func read_state() (string, error) {
-	file, err := os.Open(get_state_file())
+func readState() (string, error) {
+	file, err := os.Open(getStateFile())
 	if err != nil {
 		return err.Error(), err
 	}
@@ -187,8 +187,8 @@ func read_state() (string, error) {
 	return string(buf[:n]), nil
 }
 
-func write_state(s string) string {
-	file, err := os.Create(get_state_file())
+func writeState(s string) string {
+	file, err := os.Create(getStateFile())
 	if err != nil {
 		return err.Error()
 	}
@@ -197,9 +197,9 @@ func write_state(s string) string {
 	return "state saved."
 }
 
-func handler_stop(w http.ResponseWriter, r *http.Request) {
-	log_request("stop", r)
-	ResponseCount += 1
+func handlerStop(w http.ResponseWriter, r *http.Request) {
+	logRequest("stop", r)
+	responseCount += 1
 
 	parts := strings.Split(r.RequestURI, "/")
 	if len(parts) != 4 {
@@ -207,34 +207,34 @@ func handler_stop(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stop_method := parts[2]
-	stop_target := parts[3]
-	fmt.Printf("method: %v, target %v\n", stop_method, stop_target)
-	if stop_target == "self" {
-		switch stop_method {
+	stopMethod := parts[2]
+	stopTarget := parts[3]
+	fmt.Printf("method: %v, target %v\n", stopMethod, stopTarget)
+	if stopTarget == "self" {
+		switch stopMethod {
 		case "panic":
 			fmt.Println("panic request received.")
 			time.AfterFunc(time.Second*5, func() {
 				panic("see you!")
 			})
-			fmt.Fprintf(w, "Server %s will panic after 5 seconds.\n", NodeName)
+			fmt.Fprintf(w, "Server %s will panic after 5 seconds.\n", nodeName)
 		case "success":
 			fmt.Println("stop success request received.")
-			stop_status = 0
-			stop_chan <- 1
-			fmt.Fprintf(w, "Server %s will stop with success status after 5 seconds.\n", NodeName)
+			stopStatus = 0
+			stopChan <- 1
+			fmt.Fprintf(w, "Server %s will stop with success status after 5 seconds.\n", nodeName)
 		case "error":
 			fmt.Println("stop error request received.")
-			stop_status = 1
-			stop_chan <- 1
-			fmt.Fprintf(w, "Server %s will stop with error status after 5 seconds.\n", NodeName)
+			stopStatus = 1
+			stopChan <- 1
+			fmt.Fprintf(w, "Server %s will stop with error status after 5 seconds.\n", nodeName)
 		}
 	} else {
-		stop_child(w, stop_target, stop_method)
+		stopChild(w, stopTarget, stopMethod)
 	}
 }
 
-func sorted_keys(m map[string][]string) []string {
+func sortedKeys(m map[string][]string) []string {
 	s := make([]string, len(m))
 	index := 0
 	for key := range m {
@@ -245,16 +245,16 @@ func sorted_keys(m map[string][]string) []string {
 	return s
 }
 
-func handler_info(w http.ResponseWriter, r *http.Request) {
-	log_request("info", r)
-	ResponseCount += 1
+func handlerInfo(w http.ResponseWriter, r *http.Request) {
+	logRequest("info", r)
+	responseCount += 1
 
 	pid := os.Getpid()
 	hostname, _ := os.Hostname()
 
 	fmt.Fprintln(w, "<html><head><title>INFO</title></head><body><pre>")
-	fmt.Fprintf(w, "Response: %d\n", ResponseCount)
-	fmt.Fprintf(w, "Time    : %s\n\n", Now())
+	fmt.Fprintf(w, "Response: %d\n", responseCount)
+	fmt.Fprintf(w, "Time    : %s\n\n", now())
 
 	fmt.Fprintf(w, "Hostname: %s\n", hostname)
 	fmt.Fprintf(w, "PID     : %d\n", pid)
@@ -273,27 +273,27 @@ func handler_info(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r != nil {
-		write_request(w, r)
+		dumpRequest(w, r)
 	}
 	fmt.Fprintln(w, "</pre></body></html>")
 }
 
-func make_random_string() string {
-	s := Now().String()
+func makeRandomString() string {
+	s := now().String()
 	r := sha256.Sum256([]byte(s))
 	b := r[:]
 	return hex.EncodeToString(b)
 }
 
-func handler_version(w http.ResponseWriter, r *http.Request) {
-	log_request("version", r)
-	ResponseCount += 1
+func handlerVersion(w http.ResponseWriter, r *http.Request) {
+	logRequest("version", r)
+	responseCount += 1
 	fmt.Fprintln(w, AppVersion)
 }
 
-func handler_api(w http.ResponseWriter, r *http.Request) {
-	log_request("api", r)
-	ResponseCount += 1
+func handlerApi(w http.ResponseWriter, r *http.Request) {
+	logRequest("api", r)
+	responseCount += 1
 
 	fmt.Fprintln(w, "<html><head><title>API List</title></head><body>")
 	fmt.Fprintln(w, "<h1>This Process API</h1>")
@@ -307,8 +307,8 @@ func handler_api(w http.ResponseWriter, r *http.Request) {
 	entry("Server health", "/health")
 	entry("Show information", "./info")
 	fmt.Fprintln(w, "<li>Actions:</li><ul>")
-	entry("Write file: random", "./file/"+make_random_string())
-	now := regexp.MustCompile("[+ /:]").ReplaceAllString(Now().String(), "_")
+	entry("Write file: random", "./file/"+makeRandomString())
+	now := regexp.MustCompile("[+ /:]").ReplaceAllString(now().String(), "_")
 	entry("Write file: time", "./file/"+now)
 	entry("Read file", "./file")
 	entry("Stop me (panic)", "./stop/panic/self")
@@ -317,13 +317,13 @@ func handler_api(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "</ul>")
 	fmt.Fprintln(w, "</ul>")
 
-	state, _ := read_state()
-	fmt.Fprintf(w, "Current state file: <ul><li>path: %s</li><li>value: %s</li></ul>\n", get_state_file(), state)
+	state, _ := readState()
+	fmt.Fprintf(w, "Current state file: <ul><li>path: %s</li><li>value: %s</li></ul>\n", getStateFile(), state)
 
-	for n, node_url := range node_urls {
+	for n, nodeUrl := range nodeUrls {
 		fmt.Fprintf(w, "<h1>Node %d API</h1>\n", n+1)
 		fmt.Fprintln(w, "<ul>")
-		entry("Direct URL", node_url.String())
+		entry("Direct URL", nodeUrl.String())
 		entry("Stop with panic", path.Join("./", "stop", "panic", strconv.Itoa(n+1)))
 		entry("Stop with error", path.Join("./", "stop", "error", strconv.Itoa(n+1)))
 		entry("Stop with success", path.Join("./", "stop", "success", strconv.Itoa(n+1)))
@@ -332,7 +332,7 @@ func handler_api(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "</body></html>")
 }
 
-func get_listen_addr() string {
+func getListenAddr() string {
 	if len(os.Getenv("PORT")) > 0 {
 		return ":" + os.Getenv("PORT")
 	} else if len(os.Args) > 1 {
@@ -342,9 +342,9 @@ func get_listen_addr() string {
 	}
 }
 
-func get_node_name() string {
-	if len(os.Getenv("NODENAME")) > 0 {
-		return os.Getenv("NODENAME")
+func getNodeName() string {
+	if len(os.Getenv("nodeName")) > 0 {
+		return os.Getenv("nodeName")
 	} else {
 		hostname, err := os.Hostname()
 		if err != nil {
@@ -355,41 +355,41 @@ func get_node_name() string {
 	}
 }
 
-var node_urls []*url.URL
+var nodeUrls []*url.URL
 
-func load_node_config() {
+func loadNodeConfig() {
 	for n := 1; true; n += 1 {
 		env := fmt.Sprintf("NODE%d", n)
 		if len(os.Getenv(env)) == 0 {
 			break
 		}
-		node_url, _ := url.Parse(os.Getenv(env))
-		node_urls = append(node_urls, node_url)
+		nodeUrl, _ := url.Parse(os.Getenv(env))
+		nodeUrls = append(nodeUrls, nodeUrl)
 	}
-	fmt.Printf("%d nodes found.\n", len(node_urls))
+	fmt.Printf("%d nodes found.\n", len(nodeUrls))
 }
 
-var stop_chan chan int
-var stop_status int
+var stopChan chan int
+var stopStatus int
 
 func run() {
-	load_node_config()
+	loadNodeConfig()
 
-	addr := get_listen_addr()
-	http.HandleFunc("/", handler_root)
-	http.HandleFunc("/health", handler_health)
-	http.HandleFunc("/status", handler_status)
-	http.HandleFunc("/version", handler_version)
-	http.HandleFunc("/api", handler_api)
-	http.HandleFunc("/stop/", handler_stop)
-	http.HandleFunc("/info", handler_info)
-	http.HandleFunc("/file", handler_file)
-	http.HandleFunc("/file/", handler_file)
+	addr := getListenAddr()
+	http.HandleFunc("/", handlerRoot)
+	http.HandleFunc("/health", handlerHealth)
+	http.HandleFunc("/status", handlerStatus)
+	http.HandleFunc("/version", handlerVersion)
+	http.HandleFunc("/api", handlerApi)
+	http.HandleFunc("/stop/", handlerStop)
+	http.HandleFunc("/info", handlerInfo)
+	http.HandleFunc("/file", handlerFile)
+	http.HandleFunc("/file/", handlerFile)
 
 	srv := http.Server{Addr: addr}
 	go func() {
-		stop_chan = make(chan int)
-		<-stop_chan
+		stopChan = make(chan int)
+		<-stopChan
 		time.AfterFunc(time.Second*5, func() {
 			fmt.Printf("shutting down server.\n")
 			srv.Shutdown(context.TODO())
@@ -403,7 +403,7 @@ func run() {
 		srv.Shutdown(context.TODO())
 	}()
 
-	fmt.Printf("Parent node %s started (listen %s).\n", NodeName, addr)
+	fmt.Printf("Parent node %s started (listen %s).\n", nodeName, addr)
 	err := srv.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
 		panic(err.Error())
@@ -411,10 +411,10 @@ func run() {
 }
 
 func main() {
-	NodeName = get_node_name()
+	nodeName = getNodeName()
 
 	run()
 
 	fmt.Println("see you.")
-	os.Exit(stop_status)
+	os.Exit(stopStatus)
 }
