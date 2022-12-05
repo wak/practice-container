@@ -76,7 +76,7 @@ func whoAmI(who string) string {
 	return fmt.Sprintf("%s (host: %s, ver: %s, runat: %s, call: %d, PID: %d, file: %s).\n",
 		who,
 		hostname,
-		AppVersion,
+		appVersion,
 		runAt.Format("2006-01-02 15:04:05"),
 		responseCount,
 		os.Getpid(),
@@ -130,7 +130,7 @@ func handlerRoot(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s %s %s %d\n",
 		now().Format("2006-01-02 15:04:05"),
 		nodeName,
-		AppVersion,
+		appVersion,
 		responseCount,
 	)
 }
@@ -288,7 +288,7 @@ func makeRandomString() string {
 func handlerVersion(w http.ResponseWriter, r *http.Request) {
 	logRequest("version", r)
 	responseCount += 1
-	fmt.Fprintln(w, AppVersion)
+	fmt.Fprintln(w, appVersion)
 }
 
 func handlerApi(w http.ResponseWriter, r *http.Request) {
