@@ -54,7 +54,7 @@ func getListenAddr() string {
 	}
 }
 
-func getNodeName() string {
+func getHostname() string {
 	hostname, err := os.Hostname()
 	if err != nil {
 		return "unknown"
@@ -84,7 +84,7 @@ func run() {
 }
 
 func main() {
-	nodeName = getNodeName()
+	nodeName = getHostname()
 	run()
 	fmt.Println("see you.")
 }
